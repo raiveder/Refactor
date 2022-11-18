@@ -42,11 +42,88 @@
 </br></br>
 ![enter](Refactor/Images/EnterCycle.png)
 </br></br>
+Не стоит бояться ввести некорректные данные, так как программа сумеет правильно их обработать и сохранить работоспособность
+```C#
+private static int InputM()
+        {
+            while (true)
+            {
+                Console.Write("Введите количество поставщиков: ");
+                if (int.TryParse(Console.ReadLine(), out int m) && m > 1 && m < 11)
+                {
+                    return m;
+                }
+                Console.WriteLine("Ошибка. Введите значение корректно!");
+            }
+        }
+```
+</br></br>
+![enter](Refactor/Images/EnterCycle.png)
+</br></br>
 Теперь на экране отобразится результат расчёта целевой функции и порядок заключения договоров между поставщиками и потребтелями.
 </br></br>
 ![result](Refactor/Images/Result.png)
 </br></br>
 Для произвольного ввода начальных данных в меню требуется выбрать цифру 1. Далее необходимо действовать согласно инструкциям на экране.
+
+### Разбор кода
+
+Для понимания алгоритма работы программы при автоматическом заполнении данных следует изучить приведённый ниже код.
+```C#
+private static void Fill()
+        {
+            _matr = new int[3, 4];
+            _matr[0, 0] = 9;
+            _matr[0, 1] = 5;
+            _matr[0, 2] = 3;
+            _matr[0, 3] = 10;
+            _matr[1, 0] = 6;
+            _matr[1, 1] = 3;
+            _matr[1, 2] = 8;
+            _matr[1, 3] = 2;
+            _matr[2, 0] = 3;
+            _matr[2, 1] = 8;
+            _matr[2, 2] = 4;
+            _matr[2, 3] = 7;
+
+            _mConst = new int[3];
+            _mConst[0] = 25;
+            _mConst[1] = 55;
+            _mConst[2] = 22;
+
+            _nConst = new int[4];
+            _nConst[0] = 45;
+            _nConst[1] = 15;
+            _nConst[2] = 22;
+            _nConst[3] = 20;
+        }
+```
+Для проверки работоспособности программы можно вручную решить данную задачу и сверить результат.
+
+Также код снабжён поясняющими комментариями, что должно помочь разобраться в логике работы алгоритма нахождения оптимального распределения.
+```C#
+/// <summary>
+        /// Вывод порядка заключения договоров
+        /// </summary>
+        /// <param name="divisionArray">Распределение</param>
+        /// <param name="countM">Количество поставщиков</param>
+        /// <param name="countN">Количество потребителей</param>
+        private static void ShowContracts(int[,] divisionArray, int countM, int countN)
+        {
+            Console.WriteLine("\t\tЗаключение договоров");
+            for (int i = 0; i < countM; i++)
+            {
+                for (int j = 0; j < countN; j++)
+                {
+                    if (divisionArray[i, j] > 0)
+                    {
+                        Console.WriteLine("{0}-й поставщик с {1}-м потребителем на {2} ед. продукции", i + 1, j + 1, divisionArray[i, j]);
+                    }
+                }
+            }
+            Console.WriteLine();
+        }
+```
 
 ## Авторы
 
