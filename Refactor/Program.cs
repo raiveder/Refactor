@@ -1,4 +1,6 @@
-﻿namespace Refactor
+﻿using System;
+
+namespace Refactor
 {
     internal class Program
     {
@@ -12,7 +14,7 @@
         }
 
         /// <summary>
-        /// Показ меню пользователю
+        /// Организация меню
         /// </summary>
         private static void ShowMenu()
         {
@@ -56,52 +58,64 @@
         }
 
         /// <summary>
-        /// Определение вырожденности
+        /// Приведение матрицы к вырожденной
         /// </summary>
-        /// <param name="divisionArray">Распределение</param>
+        /// <param name="divisionArrayBool">Информация о распределении</param>
         /// <param name="m">Поставщики</param>
         /// <param name="n">Потребители</param>
-        private static void Degenerate(bool[,] divisionArray, int m, int n)
+        private static void Degenerate(bool[,] divisionArrayBool, int m, int n)
         {
-            int kol = 0;
-            foreach (bool item in divisionArray)
+            int count = 0;
+
+            foreach (bool item in divisionArrayBool)
             {
                 if (item)
                 {
-                    kol++;
+                    count++;
                 }
             }
 
-            if (m + n - 1 != kol)
+            if (m + n - 1 != count)
             {
-                int min = 16;
-                int iMin = 0;
-                int jMin = 0;
-                for (int i = 0; i < _mConst.Length; i++)
+                AddDelivery(divisionArrayBool);
+            }
+        }
+
+        /// <summary>
+        /// Добавление поставки
+        /// </summary>
+        /// <param name="divisionArrayBool">Информация о распределении</param>
+        private static void AddDelivery(bool[,] divisionArrayBool)
+        {
+            int min = 16;
+            int iMin = 0;
+            int jMin = 0;
+
+            for (int i = 0; i < _mConst.Length; i++)
+            {
+                for (int j = 0; j < _nConst.Length; j++)
                 {
-                    for (int j = 0; j < _nConst.Length; j++)
+                    if (!divisionArrayBool[i, j])
                     {
-                        if (!divisionArray[i, j])
+                        if (_matr[i, j] < min)
                         {
-                            if (_matr[i, j] < min)
-                            {
-                                min = _matr[i, j];
-                                iMin = i;
-                                jMin = j;
-                            }
+                            min = _matr[i, j];
+                            iMin = i;
+                            jMin = j;
                         }
                     }
                 }
-                divisionArray[iMin, jMin] = true;
             }
+
+            divisionArrayBool[iMin, jMin] = true;
         }
 
         /// <summary>
         /// Заполнение ячеек цикла перераспределения
         /// </summary>
         /// <param name="divisionArrayBool">Информация о распределении</param>
-        /// <param name="iMax">Индекс i максимальной дельты</param>
-        /// <param name="jMax">Индекс j максимальной дельты</param>
+        /// <param name="iMax">Индекс i ячейки начала цикла</param>
+        /// <param name="jMax">Индекс j ячейки начала цикла</param>
         /// <returns>Строковый массив с индексами ячеек цикла перераспределения</returns>
         private static string[] Cycle(bool[,] divisionArrayBool, int iMax, int jMax)
         {
@@ -113,37 +127,41 @@
             string[] array = new string[1];
             array[0] = Convert.ToString(iMax) + Convert.ToString(jMax);
             int i = 1;
-            string check = "0";
 
             while (true)
             {
-                while (true)
+                if (i % 2 == 0)
                 {
-                    if (i % 2 == 0)
+                    Console.Write("Введите ячейку цикла (+х): ");
+                }
+                else
+                {
+                    Console.Write("Введите ячейку цикла (-х): ");
+                }
+
+                string check = Console.ReadLine();
+                if (int.TryParse(check, out int result) && result > 10 && result < 35 || check == "0")
+                {
+                    if (check == "0")
                     {
-                        Console.Write("Введите ячейку цикла (+х): ");
+                        Console.Clear();
+                        return array;
+                    }
+                    if (divisionArrayBool[Convert.ToInt32(check.Substring(0, 1)) - 1, Convert.ToInt32(check.Substring(1, 1)) - 1])
+                    {
+                        Array.Resize(ref array, array.Length + 1);
+                        array[i] = check;
+                        i++;
                     }
                     else
                     {
-                        Console.Write("Введите ячейку цикла (-х): ");
-                    }
 
-                    check = Console.ReadLine();
-                    if (int.TryParse(check, out int result) && result > 10 && result < 35 || check == "0")
-                    {
-                        if (check == "0")
-                        {
-                            Console.Clear();
-                            return array;
-                        }
-                        if (divisionArrayBool[Convert.ToInt32(check.Substring(0, 1)) - 1, Convert.ToInt32(check.Substring(1, 1)) - 1])
-                        {
-                            Array.Resize(ref array, array.Length + 1);
-                            array[i] = check;
-                            i++;
-                            break;
-                        }
+                        Console.WriteLine("Цикл можно проводить только через ячейки, в которых находятся единицы!");
                     }
+                }
+                else
+                {
+
                     Console.WriteLine("Ошибка. Введите ячейку корректно!");
                 }
             }
@@ -178,12 +196,38 @@
                 return true;
             }
 
-            ShowCycle(delta, divisionArrayBool, out int iMax, out int jMax);
-            string[] cycleArray = Cycle(divisionArrayBool, iMax, jMax);
+            ShowCycle(divisionArrayBool);
+            GetIndexMax(delta, out int iMax, out int jMax);
 
-            Division(cycleArray, divisionArray, divisionArrayBool);
+            Division(Cycle(divisionArrayBool, iMax, jMax), divisionArray, divisionArrayBool);
 
             return false;
+        }
+
+        /// <summary>
+        /// Получение индексов максимального элемента двумерного массива
+        /// </summary>
+        /// <param name="array">Двумерный массив</param>
+        /// <param name="iMax">Индекс i максимального элемента массива array</param>
+        /// <param name="jMax">Индекс j максимального элемента массива array</param>
+        private static void GetIndexMax(int[,] array, out int iMax, out int jMax)
+        {
+            int max = array[0, 0];
+            iMax = 0;
+            jMax = 0;
+
+            for (int i = 0; i < _mConst.Length; i++)
+            {
+                for (int j = 0; j < _nConst.Length; j++)
+                {
+                    if (array[i, j] > max)
+                    {
+                        max = array[i, j];
+                        iMax = i;
+                        jMax = j;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -195,8 +239,6 @@
         private static void CalcPotenzials(int[] v, int[] u, bool[,] divisionArrayBool)
         {
             bool[] vBool = new bool[_mConst.Length];
-            bool[] uBool = new bool[_nConst.Length];
-            uBool[0] = true;
 
             for (int i = 0; i < _mConst.Length; i++)
             {
@@ -207,6 +249,8 @@
                 }
             }
 
+            bool[] uBool = new bool[_nConst.Length];
+            uBool[0] = true;
             bool checkV = true;
             bool checkU = true;
             while (checkV || checkU)
@@ -262,19 +306,7 @@
         /// <param name="divisionArrayBool">Информация о распределении</param>
         private static void Division(string[] cycleArray, int[,] divisionArray, bool[,] divisionArrayBool)
         {
-            int iMin = Convert.ToInt32(cycleArray[1].Substring(0, 1)) - 1;
-            int jMin = Convert.ToInt32(cycleArray[1].Substring(1, 1)) - 1;
-            int min = divisionArray[iMin, jMin];
-
-            for (int i = 3; i < cycleArray.Length; i += 2)
-            {
-                iMin = Convert.ToInt32(cycleArray[i].Substring(0, 1)) - 1;
-                jMin = Convert.ToInt32(cycleArray[i].Substring(1, 1)) - 1;
-                if (divisionArray[iMin, jMin] < min)
-                {
-                    min = divisionArray[iMin, jMin];
-                }
-            }
+            int min = GetMinCycle(cycleArray, divisionArray);
 
             int indexI = Convert.ToInt32(cycleArray[0].Substring(0, 1));
             int jndexJ = Convert.ToInt32(cycleArray[0].Substring(1, 1));
@@ -309,31 +341,36 @@
         }
 
         /// <summary>
-        /// Отображение матрицы для выбора цикла
+        /// Поиск минимальной затраты на перевозку у добавляемых поставок в цикле перераспределения
         /// </summary>
-        /// <param name="delta">Дельта</param>
-        /// <param name="divisionArrayBool">Информация о распределении</param>
-        /// <param name="iMax">Индекс i максимального элемента массива delta</param>
-        /// <param name="jMax">Индекс j максимального элемента массива delta</param>
-        private static void ShowCycle(int[,] delta, bool[,] divisionArrayBool, out int iMax, out int jMax)
+        /// <param name="cycleArray">Ячейки цикла</param>
+        /// <param name="divisionArray">Распределение</param>
+        /// <returns>Минимальная затрата на перевозку</returns>
+        private static int GetMinCycle(string[] cycleArray, int[,] divisionArray)
         {
-            int max = delta[0, 0];
-            iMax = 0;
-            jMax = 0;
+            int iMin = Convert.ToInt32(cycleArray[1].Substring(0, 1)) - 1;
+            int jMin = Convert.ToInt32(cycleArray[1].Substring(1, 1)) - 1;
+            int min = divisionArray[iMin, jMin];
 
-            for (int i = 0; i < _mConst.Length; i++)
+            for (int i = 3; i < cycleArray.Length; i += 2)
             {
-                for (int j = 0; j < _nConst.Length; j++)
+                iMin = Convert.ToInt32(cycleArray[i].Substring(0, 1)) - 1;
+                jMin = Convert.ToInt32(cycleArray[i].Substring(1, 1)) - 1;
+                if (divisionArray[iMin, jMin] < min)
                 {
-                    if (delta[i, j] > max)
-                    {
-                        max = delta[i, j];
-                        iMax = i;
-                        jMax = j;
-                    }
+                    min = divisionArray[iMin, jMin];
                 }
             }
 
+            return min;
+        }
+
+        /// <summary>
+        /// Отображение матрицы для выбора цикла
+        /// </summary>
+        /// <param name="divisionArrayBool">Информация о распределении</param>
+        private static void ShowCycle(bool[,] divisionArrayBool)
+        {
             for (int i = 0; i < _mConst.Length; i++)
             {
                 for (int j = 0; j < _nConst.Length; j++)
@@ -361,6 +398,7 @@
         private static int[,] GetDelta(bool[,] divisionArrayBool, int[] v, int[] u)
         {
             int[,] delta = new int[_mConst.Length, _nConst.Length];
+
             for (int i = 0; i < _mConst.Length; i++)
             {
                 for (int j = 0; j < _nConst.Length; j++)
@@ -382,16 +420,69 @@
         {
             int[] m = new int[_mConst.Length];
             int[] n = new int[_nConst.Length];
-            int[,] firstDivision = new int[m.Length, n.Length];
-
-            Array.Copy(_matr, firstDivision, _matr.Length);
             Array.Copy(_mConst, m, _mConst.Length);
             Array.Copy(_nConst, n, _nConst.Length);
 
-            bool[,] divisionArrayBool = new bool[m.Length, n.Length];
-            int[,] divisionArray = new int[m.Length, n.Length];
-            int func = 0;
-            string funcS = null;
+            string funcS = CalcFirstDivision(out int[,] divisionArray, out bool[,] divisionArrayBool, out int func);
+
+            while (!GetTypeDivision(divisionArray, divisionArrayBool))
+            {
+                funcS = "";
+                func = 0;
+
+                Array.Copy(_mConst, m, _mConst.Length);
+                Array.Copy(_nConst, n, _nConst.Length);
+
+                for (int i = 0; i < m.Length; i++)
+                {
+                    for (int j = 0; j < n.Length; j++)
+                    {
+                        if (divisionArray[i, j] > 0)
+                        {
+                            if (n[j] < m[i])
+                            {
+                                func += _matr[i, j] * divisionArray[i, j];
+                                funcS += _matr[i, j] + "*" + divisionArray[i, j] + " + ";
+                            }
+                            else
+                            {
+                                func += _matr[i, j] * divisionArray[i, j];
+                                funcS += _matr[i, j] + "*" + divisionArray[i, j] + " + ";
+                            }
+                        }
+                    }
+                }
+            }
+
+            funcS = "Ответ: Fопт = " + funcS.Substring(0, funcS.Length - 3) + " = " + func + " у.д.е.";
+            Console.WriteLine(funcS + "\n");
+
+            ShowContracts(divisionArray, m.Length, n.Length);
+        }
+
+        /// <summary>
+        /// Первоначальное распределение
+        /// </summary>
+        /// <param name="divisionArray">Пустой массив распределения для заполнения</param>
+        /// <param name="divisionArrayBool">Пустой массив информации о распределении для заполнения</param>
+        /// <param name="func">Значение целевой функции для инициализации</param>
+        /// <returns>Строка с расчётом целевой функции</returns>
+        private static string CalcFirstDivision(out int[,] divisionArray, out bool[,] divisionArrayBool, out int func)
+        {
+            int[] m = new int[_mConst.Length];
+            int[] n = new int[_nConst.Length];
+            Array.Copy(_mConst, m, _mConst.Length);
+            Array.Copy(_nConst, n, _nConst.Length);
+
+            divisionArray = new int[m.Length, n.Length];
+            divisionArrayBool = new bool[m.Length, n.Length];
+
+
+            int[,] firstDivision = new int[m.Length, n.Length];
+            Array.Copy(_matr, firstDivision, _matr.Length);
+
+            func = 0;
+            string funcS = "";
             int sum = 1;
 
             while (sum != 0)
@@ -422,7 +513,6 @@
                         func += _matr[iMin, jMin] * n[jMin];
                         funcS += _matr[iMin, jMin] + "*" + n[jMin] + " + ";
                         divisionArray[iMin, jMin] = n[jMin];
-                        divisionArrayBool[iMin, jMin] = true;
                         m[iMin] -= n[jMin];
                         n[jMin] = 0;
                     }
@@ -431,10 +521,11 @@
                         func += _matr[iMin, jMin] * m[iMin];
                         funcS += _matr[iMin, jMin] + "*" + m[iMin] + " + ";
                         divisionArray[iMin, jMin] = m[iMin];
-                        divisionArrayBool[iMin, jMin] = true;
                         n[jMin] -= m[iMin];
                         m[iMin] = 0;
                     }
+
+                    divisionArrayBool[iMin, jMin] = true;
                 }
 
                 sum = 0;
@@ -446,50 +537,11 @@
 
             Degenerate(divisionArrayBool, m.Length, n.Length);
 
-            bool check = GetTypeDivision(divisionArray, divisionArrayBool);
-
-            if (!check)
-            {
-                while (check != true)
-                {
-                    funcS = "";
-                    func = 0;
-
-                    Array.Copy(_mConst, m, _mConst.Length);
-                    Array.Copy(_nConst, n, _nConst.Length);
-
-                    for (int i = 0; i < m.Length; i++)
-                    {
-                        for (int j = 0; j < n.Length; j++)
-                        {
-                            if (divisionArray[i, j] > 0)
-                            {
-                                if (n[j] < m[i])
-                                {
-                                    func += _matr[i, j] * divisionArray[i, j];
-                                    funcS += _matr[i, j] + "*" + divisionArray[i, j] + " + ";
-                                }
-                                else
-                                {
-                                    func += _matr[i, j] * divisionArray[i, j];
-                                    funcS += _matr[i, j] + "*" + divisionArray[i, j] + " + ";
-                                }
-                            }
-                        }
-                    }
-
-                    check = GetTypeDivision(divisionArray, divisionArrayBool);
-                }
-            }
-
-            funcS = "Ответ: Fопт = " + funcS.Substring(0, funcS.Length - 3) + " = " + func + " у.д.е.";
-            Console.WriteLine(funcS + "\n");
-
-            ShowContracts(divisionArray, m.Length, n.Length);
+            return funcS;
         }
 
         /// <summary>
-        /// Вывод порядка заклюычения договоров
+        /// Вывод порядка заключения договоров
         /// </summary>
         /// <param name="divisionArray">Распределение</param>
         /// <param name="countM">Количество поставщиков</param>
@@ -583,6 +635,10 @@
             Console.Clear();
         }
 
+        /// <summary>
+        /// Ввод количества поставщиков
+        /// </summary>
+        /// <returns>Количество поставщиков</returns>
         private static int InputM()
         {
             while (true)
@@ -596,6 +652,10 @@
             }
         }
 
+        /// <summary>
+        /// Ввод количества потребителей
+        /// </summary>
+        /// <returns>Количество потребителей</returns>
         private static int InputN()
         {
             while (true)
@@ -609,6 +669,9 @@
             }
         }
 
+        /// <summary>
+        /// Заполнение матрицы затрат на перевозку (_matr)
+        /// </summary>
         private static void CreateMatrix()
         {
             Console.WriteLine("Заполнение матрицы затрат на перевозку.");
@@ -631,6 +694,9 @@
             }
         }
 
+        /// <summary>
+        /// Заполнение мощностей поставщиков
+        /// </summary>
         private static void InputMValue()
         {
             for (int i = 0; i < _mConst.Length; i++)
@@ -648,6 +714,9 @@
             }
         }
 
+        /// <summary>
+        /// Заполнение спроса потребителей
+        /// </summary>
         private static void InputNValue()
         {
             for (int i = 0; i < _nConst.Length; i++)
